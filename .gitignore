@@ -1,0 +1,18 @@
+# Build output
+/build/
+/dist/
+
+# NetBeans private / auto-generated
+nbproject/private/
+nbproject/build-impl.xml
+nbproject/ant-deploy.xml
+nbproject/genfiles.properties
+
+# Java compiled class files
+*.class
+
+# Logs
+*.log
+
+# Optional: local library config (nếu bạn muốn giữ lib driver riêng trên máy)
+lib/nblibraries.properties
