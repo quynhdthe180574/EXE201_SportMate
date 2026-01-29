@@ -12,7 +12,7 @@ public class DBConnection {
     public DBConnection() {
         try {
             String user = "sa";
-            String pass = "123456";
+            String pass = "sa";
             String url = "jdbc:sqlserver://localhost:1433;databaseName=sport_booking;encrypt=false;trustServerCertificate=true;";
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             connection = DriverManager.getConnection(url, user, pass);
