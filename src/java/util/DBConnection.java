@@ -3,37 +3,48 @@ package util;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class DBConnection {
-    private Connection connection;
 
-    public DBConnection() {
+    private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=sport_booking;encrypt=false;trustServerCertificate=true;";
+    private static final String USER = "sa";
+    private static final String PASS = "123";
+
+    private static Connection connection = null;
+
+    static {
         try {
-            String user = "sa";
-            String pass = "123456";
-            String url = "jdbc:sqlserver://localhost:1433;databaseName=sport_booking;encrypt=false;trustServerCertificate=true;";
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            connection = DriverManager.getConnection(url, user, pass);
-
-            if (connection != null && !connection.isClosed()) {
-                System.out.println("[DBConnection] KẾT NỐI DB THÀNH CÔNG! Connection: " + connection);
-            } else {
-                System.err.println("[DBConnection] KẾT NỐI THẤT BẠI: connection = null hoặc đã đóng");
-            }
-        } catch (Exception ex) {
-            System.err.println("[DBConnection] LỖI KẾT NỐI: " + ex.getMessage());
-            ex.printStackTrace();
+            connection = DriverManager.getConnection(URL, USER, PASS);
+            System.out.println("[DBConnection] KẾT NỐI BAN ĐẦU THÀNH CÔNG!");
+        } catch (ClassNotFoundException | SQLException e) {
+            System.err.println("[DBConnection] LỖI KẾT NỐI BAN ĐẦU: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    public Connection getConnection() {
-        return connection; // ← PHẢI TRẢ VỀ connection
+    public static Connection getConnection() {
+        try {
+            if (connection == null || connection.isClosed()) {
+                System.out.println("[DBConnection] Re-connecting...");
+                connection = DriverManager.getConnection(URL, USER, PASS);
+            }
+            return connection;
+        } catch (SQLException e) {
+            System.err.println("[DBConnection] LỖI LẤY CONNECTION: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public static void main(String[] args) {
-        DBConnection db = new DBConnection();
-        System.out.println("Test: " + db.getConnection());
+    public static void closeConnection() {
+        if (connection != null) {
+            try {
+                connection.close();
+                System.out.println("[DBConnection] Connection closed.");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
