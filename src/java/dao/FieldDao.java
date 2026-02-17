@@ -428,6 +428,50 @@ public List<Map<String, Object>> getAvailableFields(
     return list;
 }
 
+      // Top 10 sân có nhiều lượt đặt nhất (tương thích SQL Server)
+    public List<Map<String, Object>> getTop10MostBookedFields() throws SQLException {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = """
+            SELECT TOP 10 
+                   f.field_id, f.field_name, v.venue_name, v.address_detail,
+                   p.province_name, d.district_name, st.sport_name,
+                   COUNT(b.booking_id) AS booking_count,
+                   AVG(r.rating) AS avg_rating
+            FROM Field f
+            JOIN Venue v ON f.venue_id = v.venue_id
+            JOIN Province p ON v.province_id = p.province_id
+            JOIN Districts d ON v.district_id = d.district_id
+            JOIN SportTypes st ON f.sport_type_id = st.sport_type_id
+            LEFT JOIN Bookings b ON f.field_id = b.field_id  -- Bỏ điều kiện status để tránh lỗi nếu cột chưa có
+            LEFT JOIN Review r ON f.field_id = r.field_id
+            GROUP BY f.field_id, f.field_name, v.venue_name, v.address_detail,
+                     p.province_name, d.district_name, st.sport_name
+            ORDER BY COUNT(b.booking_id) DESC, AVG(r.rating) DESC
+            """;
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("fieldId", rs.getInt("field_id"));
+                map.put("fieldName", rs.getString("field_name"));
+                map.put("venueName", rs.getString("venue_name"));
+                map.put("addressDetail", rs.getString("address_detail"));
+                map.put("provinceName", rs.getString("province_name"));
+                map.put("districtName", rs.getString("district_name"));
+                map.put("sportName", rs.getString("sport_name"));
+                map.put("bookingCount", rs.getInt("booking_count"));
+                map.put("avgRating", rs.getObject("avg_rating") != null ? rs.getDouble("avg_rating") : null);
+                list.add(map);
+            }
+        } catch (SQLException e) {
+            // Nếu bảng Bookings chưa tồn tại → trả về list rỗng (không crash trang)
+            System.err.println("Lỗi lấy top fields (có thể bảng Bookings chưa tồn tại): " + e.getMessage());
+            return new ArrayList<>();  // Trả về empty list → phần top sẽ ẩn
+        }
+        return list;
+    }
+
 // Tổng số sân trống (cho phân trang)
 public int getTotalAvailableFields(String keyword, Integer provinceId, Integer districtId, Integer sportTypeId,
                                    Double minPrice, Double maxPrice, java.sql.Date bookingDate, int slotId) throws SQLException {
@@ -439,6 +483,293 @@ public int getTotalAvailableFields(String keyword, Integer provinceId, Integer d
     // (copy phần WHERE tương tự, không cần OFFSET)
     // ... (bạn tự viết tương tự, chỉ thay SELECT và bỏ GROUP BY chi tiết)
 }
+
+    // ==================== PHẦN MỚI: Venue level ====================
+
+    // Lấy danh sách Venue (group by venue) với filter và phân trang
+       // Lấy danh sách Venue (sửa filter giá vào HAVING để field_count luôn đúng)
+    public List<Map<String, Object>> getAllVenues(
+            String keyword, Integer provinceId, Integer districtId,
+            Double minPrice, Double maxPrice,
+            int page, int pageSize, String sortBy, String order) throws SQLException {
+
+        List<Map<String, Object>> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("""
+            SELECT v.venue_id, v.venue_name, v.address_detail, v.description,
+                   p.province_name, d.district_name,
+                   COUNT(f.field_id) AS field_count,
+                   AVG(r.rating) AS avg_rating, COUNT(r.review_id) AS review_count,
+                   MIN(fp.price) AS min_price, MAX(fp.price) AS max_price,
+                   v.open_time, v.close_time
+            FROM Venue v
+            JOIN Province p ON v.province_id = p.province_id
+            JOIN Districts d ON v.district_id = d.district_id
+            LEFT JOIN Field f ON v.venue_id = f.venue_id
+            LEFT JOIN FieldPrices fp ON f.field_id = fp.field_id
+            LEFT JOIN Review r ON f.field_id = r.field_id
+            WHERE 1=1
+            """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND (v.venue_name LIKE ? OR v.address_detail LIKE ?)");
+            params.add("%" + keyword + "%");
+            params.add("%" + keyword + "%");
+        }
+        if (provinceId != null) {
+            sql.append(" AND v.province_id = ?");
+            params.add(provinceId);
+        }
+        if (districtId != null) {
+            sql.append(" AND v.district_id = ?");
+            params.add(districtId);
+        }
+
+        // Di chuyển filter giá vào HAVING (không còn lọc ở WHERE)
+        sql.append(" GROUP BY v.venue_id, v.venue_name, v.address_detail, v.description,")
+           .append(" p.province_name, d.district_name, v.open_time, v.close_time");
+
+        // Thêm HAVING cho filter giá
+        boolean hasPriceFilter = false;
+        StringBuilder having = new StringBuilder();
+        if (minPrice != null) {
+            having.append(" MIN(fp.price) >= ?");
+            params.add(minPrice);
+            hasPriceFilter = true;
+        }
+        if (maxPrice != null) {
+            if (hasPriceFilter) having.append(" AND");
+            having.append(" MAX(fp.price) <= ?");
+            params.add(maxPrice);
+            hasPriceFilter = true;
+        }
+        if (hasPriceFilter) {
+            sql.append(" HAVING ").append(having);
+        }
+
+        sql.append(" ORDER BY ").append(sortBy).append(" ").append(order);
+        sql.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int index = 1;
+            for (Object param : params) {
+                ps.setObject(index++, param);
+            }
+            ps.setInt(index++, (page - 1) * pageSize);
+            ps.setInt(index, pageSize);
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("venueId", rs.getInt("venue_id"));
+                map.put("venueName", rs.getString("venue_name"));
+                map.put("description", rs.getString("description"));
+                map.put("addressDetail", rs.getString("address_detail"));
+                map.put("provinceName", rs.getString("province_name"));
+                map.put("districtName", rs.getString("district_name"));
+                map.put("fieldCount", rs.getInt("field_count"));
+                map.put("avgRating", rs.getDouble("avg_rating"));
+                map.put("reviewCount", rs.getInt("review_count"));
+                map.put("minPrice", rs.getObject("min_price") != null ? rs.getDouble("min_price") : null);
+                map.put("maxPrice", rs.getObject("max_price") != null ? rs.getDouble("max_price") : null);
+                map.put("openTime", rs.getTime("open_time"));
+                map.put("closeTime", rs.getTime("close_time"));
+                list.add(map);
+            }
+        }
+        return list;
+    }
+
+    // Tổng số Venue (sửa tương tự: dùng subquery để áp dụng HAVING)
+    public int getTotalVenues(
+            String keyword, Integer provinceId, Integer districtId,
+            Double minPrice, Double maxPrice) throws SQLException {
+
+        StringBuilder sql = new StringBuilder("""
+            SELECT COUNT(*) FROM (
+                SELECT v.venue_id
+                FROM Venue v
+                JOIN Province p ON v.province_id = p.province_id
+                JOIN Districts d ON v.district_id = d.district_id
+                LEFT JOIN Field f ON v.venue_id = f.venue_id
+                LEFT JOIN FieldPrices fp ON f.field_id = fp.field_id
+                WHERE 1=1
+            """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND (v.venue_name LIKE ? OR v.address_detail LIKE ?)");
+            params.add("%" + keyword + "%");
+            params.add("%" + keyword + "%");
+        }
+        if (provinceId != null) {
+            sql.append(" AND v.province_id = ?");
+            params.add(provinceId);
+        }
+        if (districtId != null) {
+            sql.append(" AND v.district_id = ?");
+            params.add(districtId);
+        }
+
+        sql.append(" GROUP BY v.venue_id");
+
+        boolean hasPriceFilter = false;
+        StringBuilder having = new StringBuilder();
+        if (minPrice != null) {
+            having.append(" MIN(fp.price) >= ?");
+            params.add(minPrice);
+            hasPriceFilter = true;
+        }
+        if (maxPrice != null) {
+            if (hasPriceFilter) having.append(" AND");
+            having.append(" MAX(fp.price) <= ?");
+            params.add(maxPrice);
+        }
+        if (hasPriceFilter) {
+            sql.append(" HAVING ").append(having);
+        }
+
+        sql.append(") AS sub");
+
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int index = 1;
+            for (Object param : params) {
+                ps.setObject(index++, param);
+            }
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        }
+        return 0;
+    }
+    // Lấy chi tiết một Venue (dùng cho trang VenueDetail.jsp)
+    public Map<String, Object> getVenueDetail(int venueId) throws SQLException {
+        String sql = """
+            SELECT v.venue_id, v.venue_name, v.description, v.address_detail,
+                   p.province_name, d.district_name,
+                   v.open_time, v.close_time
+            FROM Venue v
+            JOIN Province p ON v.province_id = p.province_id
+            JOIN Districts d ON v.district_id = d.district_id
+            WHERE v.venue_id = ?
+            """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, venueId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("venueId", rs.getInt("venue_id"));
+                map.put("venueName", rs.getString("venue_name"));
+                map.put("description", rs.getString("description"));
+                map.put("addressDetail", rs.getString("address_detail"));
+                map.put("provinceName", rs.getString("province_name"));
+                map.put("districtName", rs.getString("district_name"));
+                map.put("openTime", rs.getTime("open_time"));
+                map.put("closeTime", rs.getTime("close_time"));
+                return map;
+            }
+        }
+        return null;
+    }
+
+    // Lấy danh sách Field thuộc một Venue (cho trang VenueDetail.jsp)
+    public List<Map<String, Object>> getFieldsByVenueId(int venueId, int page, int pageSize) throws SQLException {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = """
+            SELECT f.field_id, f.field_name, st.sport_name,
+                   AVG(r.rating) AS avg_rating, COUNT(r.review_id) AS review_count,
+                   MIN(fp.price) AS min_price, MAX(fp.price) AS max_price
+            FROM Field f
+            JOIN SportTypes st ON f.sport_type_id = st.sport_type_id
+            LEFT JOIN FieldPrices fp ON f.field_id = fp.field_id
+            LEFT JOIN Review r ON f.field_id = r.field_id
+            WHERE f.venue_id = ?
+            GROUP BY f.field_id, f.field_name, st.sport_name
+            ORDER BY f.field_name
+            OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+            """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, venueId);
+            ps.setInt(2, (page - 1) * pageSize);
+            ps.setInt(3, pageSize);
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("fieldId", rs.getInt("field_id"));
+                map.put("fieldName", rs.getString("field_name"));
+                map.put("sportName", rs.getString("sport_name"));
+                map.put("avgRating", rs.getDouble("avg_rating"));
+                map.put("reviewCount", rs.getInt("review_count"));
+                map.put("minPrice", rs.getObject("min_price") != null ? rs.getDouble("min_price") : null);
+                map.put("maxPrice", rs.getObject("max_price") != null ? rs.getDouble("max_price") : null);
+                list.add(map);
+            }
+        }
+        return list;
+    }
+    
+        // Khung giờ TRỐNG theo ngày (an toàn nếu bảng Bookings chưa tồn tại)
+        // Khung giờ TRỐNG theo ngày (an toàn nếu bảng Bookings chưa tồn tại)
+    public List<Map<String, Object>> getAvailableSlots(int fieldId, java.sql.Date bookingDate) throws SQLException {
+        List<Map<String, Object>> list = new ArrayList<>();
+
+        // Query chính: có kiểm tra booking
+        String sqlWithBooking = """
+            SELECT ts.slot_id, ts.start_time, ts.end_time, fp.price
+            FROM TimeSlot ts
+            JOIN FieldPrices fp ON ts.slot_id = fp.slot_id
+            LEFT JOIN Bookings b ON fp.field_id = ? AND b.slot_id = ts.slot_id 
+                AND b.booking_date = ? AND (b.status IS NULL OR b.status != 'cancelled')
+            WHERE fp.field_id = ? AND b.booking_id IS NULL
+            ORDER BY ts.start_time
+            """;
+
+        // Query fallback: nếu Bookings chưa tồn tại → coi tất cả slot đều trống
+        String sqlFallback = """
+            SELECT ts.slot_id, ts.start_time, ts.end_time, fp.price
+            FROM TimeSlot ts
+            JOIN FieldPrices fp ON ts.slot_id = fp.slot_id
+            WHERE fp.field_id = ?
+            ORDER BY ts.start_time
+            """;
+
+        try (PreparedStatement ps = connection.prepareStatement(sqlWithBooking)) {
+            ps.setInt(1, fieldId);
+            ps.setDate(2, bookingDate);
+            ps.setInt(3, fieldId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("slotId", rs.getInt("slot_id"));
+                map.put("startTime", rs.getTime("start_time"));
+                map.put("endTime", rs.getTime("end_time"));
+                map.put("price", rs.getDouble("price"));
+                list.add(map);
+            }
+        } catch (SQLException e) {
+            // Nếu lỗi (thường là bảng Bookings chưa tồn tại) → dùng fallback
+            System.err.println("Lỗi kiểm tra slot trống (Bookings chưa tồn tại?): " + e.getMessage() + " → Dùng fallback tất cả slot trống.");
+            try (PreparedStatement ps = connection.prepareStatement(sqlFallback)) {
+                ps.setInt(1, fieldId);
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("slotId", rs.getInt("slot_id"));
+                    map.put("startTime", rs.getTime("start_time"));
+                    map.put("endTime", rs.getTime("end_time"));
+                    map.put("price", rs.getDouble("price"));
+                    list.add(map);
+                }
+            }
+        }
+        return list;
+    }
 }
 
    
