@@ -2,38 +2,28 @@ package util;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class DBConnection {
-    private Connection connection;
 
-    public DBConnection() {
+    private static final String USER = "sa";
+    private static final String PASS = "123456";
+    private static final String URL =
+        "jdbc:sqlserver://localhost:1433;databaseName=sport_booking;" +
+        "encrypt=false;trustServerCertificate=true;";
+
+    public static Connection getConnection() {
         try {
-            String user = "sa";
-            String pass = "123456";
-            String url = "jdbc:sqlserver://localhost:1433;databaseName=sport_booking;encrypt=false;trustServerCertificate=true;";
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            connection = DriverManager.getConnection(url, user, pass);
+            Connection conn = DriverManager.getConnection(URL, USER, PASS);
 
-            if (connection != null && !connection.isClosed()) {
-                System.out.println("[DBConnection] KẾT NỐI DB THÀNH CÔNG! Connection: " + connection);
-            } else {
-                System.err.println("[DBConnection] KẾT NỐI THẤT BẠI: connection = null hoặc đã đóng");
+            if (conn != null && !conn.isClosed()) {
+                System.out.println("[DBConnection] KẾT NỐI DB OK");
             }
-        } catch (Exception ex) {
-            System.err.println("[DBConnection] LỖI KẾT NỐI: " + ex.getMessage());
-            ex.printStackTrace();
+            return conn;
+        } catch (Exception e) {
+            System.err.println("[DBConnection] LỖI: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
-    }
-
-    public Connection getConnection() {
-        return connection; // ← PHẢI TRẢ VỀ connection
-    }
-
-    public static void main(String[] args) {
-        DBConnection db = new DBConnection();
-        System.out.println("Test: " + db.getConnection());
     }
 }
