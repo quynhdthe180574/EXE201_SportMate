@@ -60,6 +60,13 @@
         margin-right:12px;
         font-weight:500;
     }
+    .view {
+        background:#2196F3;
+        color:white;
+    }
+    .view:hover {
+        background:#0b7dda;
+    }
     .edit {
         background:var(--green-pastel);
         color:#333;
@@ -103,7 +110,6 @@
 
 <h2 style="color:var(--blue-pastel); margin:40px 0 20px;">Danh sách sân của bạn</h2>
 
-
 <c:if test="${not empty venues}">
     <table>
         <tr>
@@ -125,6 +131,7 @@
                     ${v.status}
                 </td>
                 <td class="actions">
+                    <a href="${pageContext.request.contextPath}/owner/view-venue?id=${v.venueId}" class="view">Xem</a>
                     <a href="${pageContext.request.contextPath}/owner/edit-venue?id=${v.venueId}" class="edit">Sửa</a>
                     <a href="${pageContext.request.contextPath}/owner/hide-venue?id=${v.venueId}" class="hide" onclick="return confirm('Ẩn sân này?')">Ẩn</a>
                 </td>

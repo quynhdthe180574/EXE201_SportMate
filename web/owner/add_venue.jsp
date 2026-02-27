@@ -23,11 +23,14 @@
         cursor:pointer; transition:0.3s;
     }
     button:hover { background:var(--pink-pastel); transform:scale(1.02); }
+    .file-input { margin:15px 0; }
 </style>
 
 <div class="form-box">
     <h1>Thêm Sân Mới</h1>
-    <form action="${pageContext.request.contextPath}/owner/add-venue" method="post">
+    <form action="${pageContext.request.contextPath}/owner/add-venue" method="post" 
+          enctype="multipart/form-data">
+        
         <label>Tên sân:</label>
         <input type="text" name="venue_name" required>
 
@@ -48,6 +51,9 @@
 
         <label>Giờ đóng cửa (HH:mm):</label>
         <input type="time" name="close_time" required>
+
+        <label>Ảnh sân (có thể chọn nhiều ảnh):</label>
+        <input type="file" name="venue_images" accept="image/*" multiple class="file-input">
 
         <button type="submit">Thêm sân mới</button>
     </form>
