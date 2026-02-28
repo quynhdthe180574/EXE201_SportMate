@@ -1,133 +1,250 @@
-<%-- 
-    Document   : login
-    Created on : Jan 26, 2026
-    Author     : FPTSHOP
---%>
-
 <%@page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>Đăng nhập | Sport Mate</title>
+    <head>
+        <meta charset="UTF-8">
+        <title>Đăng nhập | Sport Mate</title>
 
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+        <style>
+            body {
+                margin: 0;
+                font-family: 'Segoe UI', sans-serif;
+                height: 100vh;
+                overflow: hidden;
+            }
 
-    <style>
-        body {
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            font-family: 'Oswald', sans-serif;
-        }
+            .left-side {
+                background: linear-gradient(rgba(0,0,0,0.55), rgba(0,128,0,0.55)),
+                    url('image/login.png');
+                background-size: cover;
+                background-position: center;
+                color: white;
+                padding: 60px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
 
-        .auth-card {
-            background: #111;
-            border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-            color: #fff;
-        }
+            .brand {
+                font-size: 40px;
+                font-weight: 700;
+            }
+            .hero-text {
+                margin-top: 250px;
+            }
+            .hero-text h1 {
+                font-size: 48px;
+                font-weight: 800;
+                line-height: 1.2;
+            }
 
-        h4 {
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
+            .hero-text span {
+                color: #28a745;
+            }
 
-        label {
-            font-size: 14px;
-            color: #aaa;
-        }
+            .stats {
+                display: flex;
+                gap: 30px;
+                margin-top: 30px;
+            }
 
-        .form-control {
-            background: #1c1c1c;
-            border: 1px solid #333;
-            color: #fff;
-        }
+            .stat-box {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
 
-        .form-control:focus {
-            background: #1c1c1c;
-            color: #fff;
-            border-color: #28a745;
-            box-shadow: none;
-        }
+            .stat-box i {
+                font-size: 22px;
+                color: #28a745;
+            }
 
-        .btn-main {
-            background: linear-gradient(90deg, #28a745, #5ddf72);
-            border: none;
-            color: #000;
-            font-weight: 600;
-            letter-spacing: 1px;
-            transition: all 0.3s;
-        }
+            .right-side {
+                background: #f8f9fa;
+                padding: 60px;
+                display: flex;
+                align-items: center;
+            }
 
-        .btn-main:hover {
-            transform: scale(1.03);
-            box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
-        }
+            .form-wrapper {
+                width: 100%;
+                max-width: 420px;
+                margin: auto;
+            }
 
-        .sport-icon {
-            font-size: 42px;
-            color: #28a745;
-        }
+            .form-wrapper h3 {
+                font-weight: 700;
+            }
 
-        a {
-            color: #28a745;
-            text-decoration: none;
-        }
+            .form-control {
+                height: 45px;
+            }
 
-        a:hover {
-            text-decoration: underline;
-        }
+            .form-control:focus {
+                border-color: #198754;
+                box-shadow: 0 0 0 0.2rem rgba(25,135,84,0.25);
+            }
 
-        .error-text {
-            font-size: 14px;
-        }
-    </style>
-</head>
+            .btn-main {
+                background: #198754;
+                border: none;
+                font-weight: 600;
+                height: 45px;
+            }
 
-<body>
+            .btn-main:hover {
+                background: #157347;
+            }
 
-<div class="container d-flex justify-content-center align-items-center" style="min-height:100vh">
-    <div class="card auth-card p-4" style="width:420px">
+            .divider {
+                display: flex;
+                align-items: center;
+                text-align: center;
+                margin: 20px 0;
+            }
 
-        <div class="text-center mb-3">
+            .divider::before,
+            .divider::after {
+                content: "";
+                flex: 1;
+                border-bottom: 1px solid #ccc;
+            }
 
-            <h4>SPORT MATE</h4>
-            <small class="text-success">Push your limits</small>
-        </div>
+            .divider span {
+                margin: 0 10px;
+                color: #777;
+            }
 
-        <form action="login" method="post">
-            <div class="mb-3">
-                <label>Email</label>
-                <input name="email" type="email" class="form-control" placeholder="you@email.com" required>
+            @media (max-width: 992px) {
+                .left-side {
+                    display: none;
+                }
+                body {
+                    overflow: auto;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <div class="container-fluid">
+            <div class="row vh-100">
+
+                <!-- LEFT SIDE -->
+                <div class="col-lg-7 left-side d-none d-lg-flex">
+
+                    <div class="brand">
+                        SPORT MATE
+                        <div style="font-size:20px; font-weight:400;">
+                            Nền tảng đặt sân thể thao
+                        </div>
+                    </div>
+
+                    <div class="hero-text">
+                        <h1>
+                            ĐẶT SÂN <br>
+                            <span>THỂ THAO</span><br>
+                            DỄ DÀNG
+                        </h1>
+
+                        <p class="mt-3">
+                            Tìm và đặt sân thể thao gần bạn chỉ với vài thao tác.
+                            Nhanh chóng, tiện lợi và đáng tin cậy.
+                        </p>
+
+                        <div class="stats">
+                            <div class="stat-box">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                <div>
+                                    <strong>5+sân thể thao</strong><br>
+                                    <small>Khu vực Hòa Lạc</small>
+                                </div>
+                            </div>
+
+                            <div class="stat-box">
+                                <i class="bi bi-clock-fill"></i>
+                                <div>
+                                    <strong>Đặt sân 24/7</strong><br>
+                                    <small>Nhanh chóng, tiện lợi</small>
+                                </div>
+                            </div>
+
+                            <div class="stat-box">
+                                <i class="bi bi-shield-check"></i>
+                                <div>
+                                    <strong>Bảo mật</strong><br>
+                                    <small>An toàn, tin cậy</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div></div>
+
+                </div>
+
+                <!-- RIGHT SIDE -->
+                <div class="col-lg-5 right-side">
+
+                    <div class="form-wrapper">
+
+                        <h3>Đăng nhập</h3>
+                        <p class="text-muted">
+                            Đăng nhập để đặt sân và quản lý lịch trình của bạn
+                        </p>
+
+                        <form action="login" method="post">
+
+                            <div class="mb-3">
+                                <label>Email</label>
+                                <input name="email" type="email"
+                                       class="form-control"
+                                       placeholder="you@email.com" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <label>Mật khẩu</label>
+                                    <a href="#" class="text-success small">Quên mật khẩu?</a>
+                                </div>
+                                <input type="password" name="password"
+                                       class="form-control"
+                                       placeholder="Nhập mật khẩu" required>
+                            </div>
+
+                            <button class="btn btn-main w-100 text-white mt-2">
+                                ĐĂNG NHẬP
+                            </button>
+
+                        </form>
+
+                        <div class="text-danger text-center mt-3">
+                            ${error}
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <small>
+                                Chưa có tài khoản?
+                                <a href="register.jsp" class="text-success">
+                                    Đăng ký ngay
+                                </a>
+                            </small>
+                        </div>
+
+                        <div class="text-center mt-4 text-muted small">
+                            © 2026 Sport Mate. All rights reserved.
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
-
-            <div class="mb-3">
-                <label>Mật khẩu</label>
-                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
-            </div>
-
-            <button class="btn btn-main w-100 mt-2">
-                ĐĂNG NHẬP
-            </button>
-        </form>
-
-        <div class="text-danger text-center mt-3 error-text">
-            ${error}
         </div>
 
-        <div class="text-center mt-3">
-            <small class="text-secondary">
-                Chưa có tài khoản?
-                <a href="register.jsp">Đăng ký ngay</a>
-            </small>
-        </div>
-
-    </div>
-</div>
-
-</body>
+    </body>
 </html>

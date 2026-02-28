@@ -10,6 +10,7 @@ package util;
  */
 
 import java.security.MessageDigest;
+import java.util.regex.Pattern;
 
 public class PasswordUtil {
     public static String hash(String password) {
@@ -23,6 +24,21 @@ public class PasswordUtil {
         } catch (Exception e) {
             return null;
         }
+    }
+    
+    public static boolean isValidPassword(String password) {
+
+        if (password == null) return false;
+
+        // Regex:
+        // At least 8 chars
+        // 1 uppercase
+        // 1 lowercase
+        // 1 digit
+        // 1 special char
+        String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,}$";
+
+        return Pattern.matches(regex, password);
     }
 }
 

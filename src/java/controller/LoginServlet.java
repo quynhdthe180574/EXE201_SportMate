@@ -1,46 +1,56 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package controller;
 
 import dao.UserDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.*;
 import java.io.IOException;
 import model.User;
-import util.PasswordUtil;
 
-/**
- *
- * @author FPTSHOP
- */
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
-        try {
-            UserDAO dao = new UserDAO();
-            User u = dao.login(
-                req.getParameter("email"),
-                PasswordUtil.hash(req.getParameter("password"))
-            );
 
-            if (u == null) {
-                req.setAttribute("error", "Sai thông tin đăng nhập");
-                req.getRequestDispatcher("login.jsp").forward(req, resp);
-                return;
-            }
+        String email = req.getParameter("email");
+        String password = req.getParameter("password");
 
-            req.getSession().setAttribute("user", u);
-            resp.sendRedirect("home.jsp");
-        } catch (Exception e) {
-            throw new ServletException(e);
+        UserDAO dao = new UserDAO();
+        User u = dao.login(email, password); // KHÔNG hash ở đây
+
+        // 1️⃣ Sai thông tin
+        if (u == null) {
+            req.setAttribute("error", "Sai email hoặc mật khẩu");
+            req.getRequestDispatcher("login.jsp").forward(req, resp);
+            return;
+        }
+
+        // 2️⃣ Chưa verify email
+        if (!u.isVerified()) {
+            req.setAttribute("error", "Tài khoản chưa được xác thực. Vui lòng kiểm tra email.");
+            req.getRequestDispatcher("login.jsp").forward(req, resp);
+            return;
+        }
+
+        // 3️⃣ Tạo session
+        HttpSession session = req.getSession();
+        session.setAttribute("user", u);
+
+        // 4️⃣ Redirect theo role
+        switch (u.getRoleId()) {
+            case 1: // Admin
+                resp.sendRedirect("admin/dashboard.jsp");
+                break;
+            case 2: // chủ sân
+                resp.sendRedirect("owner/dashboard.jsp");
+                break;
+            case 3: // người chơi
+                resp.sendRedirect("home.jsp");               
+                break;
+            default:
+                resp.sendRedirect("home.jsp");
         }
     }
 }
-
