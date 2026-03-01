@@ -141,6 +141,10 @@
                 background: #111827;
                 color: #9ca3af;
             }
+            .slot-item.opacity-50 {
+                background: #f3f4f6;
+                border: 1px solid #d1d5db;
+            }
         </style>
     </head>
     <body>
@@ -269,19 +273,39 @@
                                     <input type="hidden" name="bookingDate" value="${bookingDate}">
                                     <div class="d-grid gap-3">
                                         <c:forEach items="${availableSlots}" var="slot">
-                                            <label class="slot-item d-block cursor-pointer">
+
+                                            <label class="slot-item d-block">
+
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="radio" name="slotId" value="${slot.slotId}" id="slot${slot.slotId}" required>
-                                                        <label class="form-check-label fw-semibold" for="slot${slot.slotId}">
-                                                            <fmt:formatDate value="${slot.startTime}" pattern="HH:mm"/> - 
+
+                                                        <input class="form-check-input" 
+                                                               type="radio" 
+                                                               name="slotId" 
+                                                               value="${slot.slotId}" 
+                                                               id="slot${slot.slotId}"
+                                                               ${slot.status == 'BOOKED' ? 'disabled' : ''}
+                                                               required>
+
+                                                        <label class="form-check-label fw-semibold"
+                                                               for="slot${slot.slotId}">
+                                                            <fmt:formatDate value="${slot.startTime}" pattern="HH:mm"/> -
                                                             <fmt:formatDate value="${slot.endTime}" pattern="HH:mm"/>
+
+                                                            <c:if test="${slot.status == 'BOOKED'}">
+                                                                <span class="text-danger ms-2">(Đã đặt)</span>
+                                                            </c:if>
                                                         </label>
+
                                                     </div>
-                                                    <span class="text-success fw-bold">
-                                                        <fmt:formatNumber value="${slot.price}" type="currency" currencySymbol="₫"/>
+
+                                                    <span class="fw-bold text-success">
+                                                        <fmt:formatNumber value="${slot.price}" 
+                                                                          type="currency" 
+                                                                          currencySymbol="₫"/>
                                                     </span>
                                                 </div>
+
                                             </label>
                                         </c:forEach>
                                     </div>
@@ -302,7 +326,7 @@
                 </div>
             </div>
         </div>
-       
+
 
         <!-- Footer -->
         <footer class="py-5">

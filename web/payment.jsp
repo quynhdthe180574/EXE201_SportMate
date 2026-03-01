@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="dao.BookingDao" %>
+<%@ page import="dao.BookingDAO" %>
 <%@ page import="java.util.Map" %>
 
 <%
@@ -11,7 +11,7 @@
 
     int bookingId = Integer.parseInt(bookingIdParam);
 
-    BookingDao dao = new BookingDao();
+    BookingDAO dao = new BookingDAO();
     Map<String, Object> booking = dao.getBookingById(bookingId);
 
     if (booking == null) {
@@ -245,8 +245,13 @@
                         &amount=<%= amountNoDot %>
                         &addInfo=BOOKING_<%= bookingId %>"                        alt="QR Thanh toán">
                 </div>
+                <div id="paymentMessage" 
+                     style="display:none; margin-top:20px; padding:15px; border-radius:10px; font-weight:bold;">
+                </div>
 
-
+                <div id="countdownBox" 
+                     style="margin-top:15px; font-weight:bold; font-size:16px;">
+                </div>
                 <div class="payment-note">
                     📱 Mở <b>ứng dụng ngân hàng</b> và quét mã QR<br>
                     💡 Vui lòng thanh toán <b>đúng số tiền</b>
@@ -256,7 +261,80 @@
             </div>
 
         </div>
+        <script>
 
+            // ===== THỜI GIAN ĐỢI (10 phút) =====
+            let paymentTime = 10 * 60;
+            let checkInterval;
+
+            const bookingPrice = <%= amountNoDot %>;
+            const bookingContent = "BOOKING<%= bookingId %>";
+
+            function startCountdown() {
+
+            const countdownBox = document.getElementById("countdownBox");
+                    const countdownInterval = setInterval(() => {
+
+                    let minutes = Math.floor(paymentTime / 60);
+                            let seconds = paymentTime % 60;
+                            seconds = seconds < 10 ? "0" + seconds : seconds;
+                            countdownBox.innerHTML = "⏳ Thời gian còn lại: "
+                            + minutes + ":" + seconds;
+                            if (paymentTime < 60) {
+                    countdownBox.style.color = "yellow";
+                    }
+
+                    paymentTime--;
+                            if (paymentTime < 0) {
+                    clearInterval(countdownInterval);
+                            clearInterval(checkInterval);
+                            countdownBox.innerHTML = "❌ Đã hết thời gian thanh toán.";
+                            countdownBox.style.color = "red";
+                            // Đợi 2 giây rồi về trang chủ
+                            setTimeout(() => {
+                            window.location.href = "home.jsp";
+                            }, 10000);
+                            }
+    }, 1000);
+}
+                    async function checkPaid() {
+                    try {
+
+                    const response = await fetch("https://script.google.com/macros/s/AKfycbx_7YlpGObHcFXy-gsffVBIBn-ZDXFemTbYOdOX_nmqMaaoSqgySPv7YT6SHCIuHi8/exec");
+                            const data = await response.json();
+                            if (!data.data || data.data.length === 0)
+                            return;
+                            for (let i = 0; i < data.data.length; i++) {
+
+                    const paid = data.data[i];
+                            const price = parseFloat(
+                                    paid["Giá trị"].toString().replace(/,/g, "")
+                                    );
+                            const content = paid["Mô tả"];
+                            if (price === bookingPrice &&
+                                    content &&
+                                    content.includes(bookingContent)) {
+
+                    clearInterval(checkInterval);
+                            paymentTime = 0;
+                            const msg = document.getElementById("paymentMessage");
+                            msg.style.display = "block";
+                            msg.style.background = "#e8f5e9";
+                            msg.style.color = "#2e7d32";
+                            msg.innerHTML = "✅ Đã nhận được thanh toán. Đang chờ xác nhận từ chủ sân.";
+                            break;
+                    }
+                    }
+
+                    } catch (err) {
+                    console.error("Lỗi:", err);
+                    }
+                    }
+
+                    startCountdown();
+                            checkPaid();
+                            checkInterval = setInterval(checkPaid, 5000);
+        </script>
 
     </body>
 </html>

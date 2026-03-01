@@ -1,16 +1,18 @@
 package dao;
 
 import java.sql.*;
+import java.util.ArrayList;
 import util.DBConnection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import model.User;
 
-public class BookingDao {
+public class BookingDAO {
 
     private Connection conn;
 
-    public BookingDao() throws Exception {
+    public BookingDAO() throws Exception {
         conn = DBConnection.getConnection();
     }
 
@@ -29,11 +31,11 @@ public class BookingDao {
         ps.setDouble(5, totalPrice);
 
         try {
-    ps.executeUpdate();
-} catch (Exception e) {
-    e.printStackTrace();
-    System.out.println("SQL ERROR: " + e.getMessage());
-}
+            ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("SQL ERROR: " + e.getMessage());
+        }
 
         ResultSet rs = ps.getGeneratedKeys();
         if (rs.next()) {
@@ -138,10 +140,10 @@ public class BookingDao {
 
             ps.setInt(1, bookingId);
             ResultSet rs = ps.executeQuery();
-System.out.println("BookingId = " + bookingId);
+            System.out.println("BookingId = " + bookingId);
 
             if (rs.next()) {
-                    System.out.println("Found booking");
+                System.out.println("Found booking");
 
                 booking = new HashMap<>();
                 booking.put("booking_id", rs.getInt("booking_id"));
@@ -157,16 +159,55 @@ System.out.println("BookingId = " + bookingId);
                 booking.put("fullname", rs.getString("fullname"));
                 booking.put("email", rs.getString("email"));
                 booking.put("phone", rs.getString("phone"));
-            }
-            else{
-                    System.out.println("No booking found");
+            } else {
+                System.out.println("No booking found");
 
             }
         } catch (Exception e) {
-             e.printStackTrace();
-    System.out.println("SQL ERROR: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("SQL ERROR: " + e.getMessage());
         }
 
         return booking;
+    }
+
+    public List<Map<String, Object>> getBookingHistory(int userId) {
+
+        List<Map<String, Object>> list = new ArrayList<>();
+
+        String sql = """
+        SELECT b.booking_id, f.field_name,
+               s.start_time, s.end_time,
+               b.booking_date, b.total_price,
+               b.booking_status
+        FROM Booking b
+        JOIN Field f ON b.field_id = f.field_id
+        JOIN TimeSlot s ON b.slot_id = s.slot_id
+        WHERE b.user_id = ?
+        ORDER BY b.booking_date DESC
+    """;
+
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("booking_id", rs.getInt("booking_id"));
+                map.put("field_name", rs.getString("field_name"));
+                map.put("start_time", rs.getTime("start_time"));
+                map.put("end_time", rs.getTime("end_time"));
+                map.put("booking_date", rs.getDate("booking_date"));
+                map.put("total_price", rs.getDouble("total_price"));
+                map.put("booking_status", rs.getString("booking_status"));
+                list.add(map);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
     }
 }

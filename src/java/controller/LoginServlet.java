@@ -6,7 +6,6 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import model.User;
-import util.PasswordUtil;
 
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
@@ -15,45 +14,43 @@ public class LoginServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
 
-        try {
-            String email = req.getParameter("email");
-            String password = req.getParameter("password");
+        String email = req.getParameter("email");
+        String password = req.getParameter("password");
 
-            if (email == null || password == null || 
-                email.isEmpty() || password.isEmpty()) {
+        UserDao dao = new UserDao();
+        User u = dao.login(email, password); // KHÔNG hash ở đây
 
-                req.setAttribute("error", "Vui lòng nhập đầy đủ thông tin");
-                req.getRequestDispatcher("login.jsp").forward(req, resp);
-                return;
-            }
+        // 1️⃣ Sai thông tin
+        if (u == null) {
+            req.setAttribute("error", "Sai email hoặc mật khẩu");
+            req.getRequestDispatcher("login.jsp").forward(req, resp);
+            return;
+        }
 
-            UserDao dao = new UserDao();
-            User user = dao.login(email, PasswordUtil.hash(password));
+        // 2️⃣ Chưa verify email
+        if (!u.isVerified()) {
+            req.setAttribute("error", "Tài khoản chưa được xác thực. Vui lòng kiểm tra email.");
+            req.getRequestDispatcher("login.jsp").forward(req, resp);
+            return;
+        }
 
-            if (user == null) {
-                req.setAttribute("error", "Sai thông tin đăng nhập");
-                req.getRequestDispatcher("login.jsp").forward(req, resp);
-                return;
-            }
+        // 3️⃣ Tạo session
+        HttpSession session = req.getSession();
+        session.setAttribute("user", u);
 
-            // 🔥 Xóa session cũ (chống session fixation)
-            HttpSession oldSession = req.getSession(false);
-            if (oldSession != null) {
-                oldSession.invalidate();
-            }
-
-            // 🔥 Tạo session mới
-            HttpSession newSession = req.getSession(true);
-            newSession.setAttribute("user", user);
-
-            // (Optional) set timeout 30 phút
-            newSession.setMaxInactiveInterval(30 * 60);
-
-            resp.sendRedirect("home.jsp");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new ServletException("Lỗi đăng nhập", e);
+        // 4️⃣ Redirect theo role
+        switch (u.getRoleId()) {
+            case 1: // Admin
+                resp.sendRedirect("admin/dashboard.jsp");
+                break;
+            case 2: // chủ sân
+                resp.sendRedirect("owner/dashboard.jsp");
+                break;
+            case 3: // người chơi
+                resp.sendRedirect("home.jsp");               
+                break;
+            default:
+                resp.sendRedirect("home.jsp");
         }
     }
 }

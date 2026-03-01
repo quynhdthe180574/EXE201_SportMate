@@ -76,6 +76,54 @@
         <servlet-name>CheckPaymentServlet</servlet-name>
         <servlet-class>controller.CheckPaymentServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>BookingHistory</servlet-name>
+        <servlet-class>controller.BookingHistory</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>OwnerPromotionServlet</servlet-name>
+        <servlet-class>controller.OwnerPromotionServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>OwnerPaymentServlet</servlet-name>
+        <servlet-class>controller.OwnerPaymentServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>OwnerBookingServlet</servlet-name>
+        <servlet-class>controller.OwnerBookingServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>AdminUserServlet</servlet-name>
+        <servlet-class>controller.AdminUserServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ViewVenueServlet</servlet-name>
+        <servlet-class>controller.ViewVenueServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>VerifyServlet</servlet-name>
+        <servlet-class>controller.VerifyServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>ResendOtpServlet</servlet-name>
+        <servlet-class>ResendOtpServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>OwnerRequestController</servlet-name>
+        <servlet-class>controller.OwnerRequestController</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>EditProfileServlet</servlet-name>
+        <servlet-class>controller.EditProfileServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>DeleteAccountServlet</servlet-name>
+        <servlet-class>controller.DeleteAccountServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>BecomeOwnerServlet</servlet-name>
+        <servlet-class>controller.BecomeOwnerServlet</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>HomeServlet</servlet-name>
         <url-pattern>/HomeServlet</url-pattern>
@@ -144,5 +192,48 @@
         <servlet-name>AddVenueServlet</servlet-name>
         <url-pattern>/AddVenueServlet</url-pattern>
     </servlet-mapping>
-    
+    <servlet-mapping>
+        <servlet-name>OwnerPromotionServlet</servlet-name>
+        <url-pattern>/OwnerPromotionServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OwnerPaymentServlet</servlet-name>
+        <url-pattern>/OwnerPaymentServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OwnerBookingServlet</servlet-name>
+        <url-pattern>/OwnerBookingServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>AdminUserServlet</servlet-name>
+        <url-pattern>/AdminUserServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ViewVenueServlet</servlet-name>
+        <url-pattern>/ViewVenueServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>VerifyServlet</servlet-name>
+        <url-pattern>/VerifyServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ResendOtpServlet</servlet-name>
+        <url-pattern>/ResendOtpServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OwnerRequestController</servlet-name>
+        <url-pattern>/OwnerRequestController</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>EditProfileServlet</servlet-name>
+        <url-pattern>/EditProfileServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>DeleteAccountServlet</servlet-name>
+        <url-pattern>/DeleteAccountServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>BecomeOwnerServlet</servlet-name>
+        <url-pattern>/BecomeOwnerServlet</url-pattern>
+    </servlet-mapping>
 </web-app>

@@ -51,9 +51,9 @@ public class ChangePasswordServlet extends HttpServlet {
         // 4️⃣ phản hồi
         if (!ok) {
             req.setAttribute("error", "Mật khẩu cũ không đúng");
-            req.getRequestDispatcher("change-password.jsp").forward(req, resp);
+            req.getRequestDispatcher("profile.jsp").forward(req, resp);
         } else {
-            //  đổi mật khẩu thành công → quay về profile
+            req.getSession().setAttribute("passwordSuccess", "Đổi mật khẩu thành công!");
             resp.sendRedirect("profile.jsp");
         }
 

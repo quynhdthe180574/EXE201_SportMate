@@ -1,6 +1,6 @@
 package controller;
 
-import dao.BookingDao;
+import dao.BookingDAO;
 import model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -29,7 +29,7 @@ public class BookingServlet extends HttpServlet {
             User user = (User) session.getAttribute("user");
             int userId = user.getUserId();
 
-            BookingDao bookingDao = new BookingDao();
+            BookingDAO bookingDao = new BookingDAO();
 
             // 🔥 Lấy giá từ DB (không lấy từ form)
             Double totalPrice = bookingDao.getPrice(fieldId, slotId);
@@ -47,7 +47,7 @@ public class BookingServlet extends HttpServlet {
             );
 
             if (bookingId > 0) {
-                response.sendRedirect("payment.jsp?bookingId=" + bookingId);
+                response.sendRedirect( request.getContextPath() + "/payment.jsp?bookingId=" + bookingId);
             } else {
                 response.sendRedirect("home.jsp");
             }

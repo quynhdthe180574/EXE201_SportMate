@@ -1,6 +1,6 @@
 package controller;
 
-import dao.BookingDao;
+import dao.BookingDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -16,7 +16,7 @@ public class CheckPaymentServlet extends HttpServlet {
         try {
             int bookingId = Integer.parseInt(request.getParameter("bookingId"));
 
-            BookingDao dao = new BookingDao();
+            BookingDAO dao = new BookingDAO();
 
             // 👉 Update trạng thái thành PAID
             dao.updateStatus(bookingId, "PAID");
