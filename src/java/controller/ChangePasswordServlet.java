@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import model.User;
+import util.PasswordUtil;
 
 @WebServlet("/change-password")
 public class ChangePasswordServlet extends HttpServlet {
@@ -24,14 +25,24 @@ public class ChangePasswordServlet extends HttpServlet {
         String newPass = req.getParameter("newPassword");
         String confirm = req.getParameter("confirmPassword");
 
-        // 1️⃣ check confirm
+        // 1️⃣ Check confirm
         if (!newPass.equals(confirm)) {
             req.setAttribute("error", "Mật khẩu xác nhận không khớp");
-            req.getRequestDispatcher("change-password.jsp").forward(req, resp);
+            req.setAttribute("activeTab", "password");
+            req.getRequestDispatcher("profile.jsp").forward(req, resp);
             return;
         }
 
-        // 2️⃣ lấy user từ session
+        // 2️⃣ Validate mật khẩu mới
+        if (!PasswordUtil.isValidPassword(newPass)) {
+            req.setAttribute("error",
+                    "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.");
+            req.setAttribute("activeTab", "password");
+            req.getRequestDispatcher("profile.jsp").forward(req, resp);
+            return;
+        }
+
+        // 3️⃣ Lấy user từ session
         HttpSession session = req.getSession();
         User user = (User) session.getAttribute("user");
 
@@ -40,7 +51,7 @@ public class ChangePasswordServlet extends HttpServlet {
             return;
         }
 
-        // 3️⃣ đổi mật khẩu trong DB
+        // 4️⃣ Đổi mật khẩu trong DB
         UserDAO dao = new UserDAO();
         boolean ok = dao.changePassword(
                 user.getUserId(),
@@ -48,14 +59,14 @@ public class ChangePasswordServlet extends HttpServlet {
                 newPass
         );
 
-        // 4️⃣ phản hồi
+        // 5️⃣ Phản hồi
         if (!ok) {
             req.setAttribute("error", "Mật khẩu cũ không đúng");
-            req.getRequestDispatcher("profile.jsp").forward(req, resp);
         } else {
-            req.getSession().setAttribute("passwordSuccess", "Đổi mật khẩu thành công!");
-            resp.sendRedirect("profile.jsp");
+            req.setAttribute("success", "Đổi mật khẩu thành công!");
         }
 
+        req.setAttribute("activeTab", "password");
+        req.getRequestDispatcher("profile.jsp").forward(req, resp);
     }
 }

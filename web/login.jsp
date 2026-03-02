@@ -209,7 +209,9 @@
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between">
                                     <label>Mật khẩu</label>
-                                    <a href="#" class="text-success small">Quên mật khẩu?</a>
+                                    <a href="forgot-password.jsp" class="text-success small">
+                                        Quên mật khẩu?
+                                    </a>
                                 </div>
                                 <input type="password" name="password"
                                        class="form-control"

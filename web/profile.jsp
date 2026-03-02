@@ -261,11 +261,14 @@
                                     </div>
 
                                     <!-- Nút xóa -->
-                                    <button type="button"
-                                            class="btn btn-delete"
-                                            onclick="confirmDelete()">
-                                        Xóa tài khoản
-                                    </button>
+                                    <form action="delete-account" method="post"
+                                          onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản không?');">
+
+                                        <button type="submit"
+                                                class="btn btn-delete">
+                                            Xóa tài khoản
+                                        </button>
+                                    </form>
 
                                 </div>
                             </form>
@@ -332,19 +335,19 @@
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <script>
-                                                function enableEdit() {
+                                              function enableEdit() {
 
-                                                    // Bỏ disabled input
-                                                    document.querySelectorAll('.edit-field').forEach(el => {
-                                                        el.removeAttribute("disabled");
-                                                    });
+                                                  // Bỏ disabled input
+                                                  document.querySelectorAll('.edit-field').forEach(el => {
+                                                      el.removeAttribute("disabled");
+                                                  });
 
-                                                    // Ẩn nút chỉnh sửa
-                                                    document.getElementById("editBtn").classList.add("d-none");
+                                                  // Ẩn nút chỉnh sửa
+                                                  document.getElementById("editBtn").classList.add("d-none");
 
-                                                    // Hiện nút lưu
-                                                    document.getElementById("saveBtn").classList.remove("d-none");
-                                                }
+                                                  // Hiện nút lưu
+                                                  document.getElementById("saveBtn").classList.remove("d-none");
+                                              }
         </script>
 
         <c:if test="${not empty profileSuccess}">
@@ -385,5 +388,14 @@
         document.getElementById("passwordTab").style.display = "none";
 
         document.getElementById(tabId).style.display = "block";
+    }
+</script>
+<script>
+    window.onload = function () {
+        const activeTab = "${activeTab}";
+        if (activeTab === "password") {
+            document.getElementById("passwordTab").style.display = "block";
+            document.getElementById("profileTab").style.display = "none";
+        }
     }
 </script>

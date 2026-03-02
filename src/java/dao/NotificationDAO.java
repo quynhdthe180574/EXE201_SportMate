@@ -8,7 +8,6 @@ package dao;
  *
  * @author FPTSHOP
  */
-
 import java.sql.*;
 import java.util.*;
 import model.Notification;
@@ -48,5 +47,113 @@ public class NotificationDAO {
         }
         return list;
     }
-}
 
+    public void markAllAsRead(int userId) {
+
+        String sql = "UPDATE Notifications SET is_read = 1 WHERE user_id = ?";
+
+        try (Connection con = new DBConnection().getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteAllByUser(int userId) {
+
+        String sql = "DELETE FROM Notifications WHERE user_id = ?";
+
+        try (Connection con = new DBConnection().getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Notification> getUnreadByUser(int userId) {
+
+        List<Notification> list = new ArrayList<>();
+
+        String sql = """
+        SELECT * FROM Notifications
+        WHERE user_id = ? AND is_read = 0
+        ORDER BY created_at DESC
+    """;
+
+        try (Connection con = new DBConnection().getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Notification n = new Notification();
+                n.setNotificationId(rs.getInt("notification_id"));
+                n.setUserId(rs.getInt("user_id"));
+                n.setTitle(rs.getString("title"));
+                n.setContent(rs.getString("content"));
+                n.setNotificationType(rs.getString("notification_type"));
+                n.setCreatedAt(rs.getTimestamp("created_at"));
+                list.add(n);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    public List<Notification> getReadByUser(int userId) {
+
+        List<Notification> list = new ArrayList<>();
+
+        String sql = """
+        SELECT * FROM Notifications
+        WHERE user_id = ? AND is_read = 1
+        ORDER BY created_at DESC
+    """;
+
+        try (Connection con = new DBConnection().getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Notification n = new Notification();
+                n.setNotificationId(rs.getInt("notification_id"));
+                n.setUserId(rs.getInt("user_id"));
+                n.setTitle(rs.getString("title"));
+                n.setContent(rs.getString("content"));
+                n.setNotificationType(rs.getString("notification_type"));
+                n.setCreatedAt(rs.getTimestamp("created_at"));
+                list.add(n);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+    
+    public void deleteById(int notificationId) {
+
+    String sql = "DELETE FROM Notifications WHERE notification_id = ?";
+
+    try (Connection con = new DBConnection().getConnection();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+
+        ps.setInt(1, notificationId);
+        ps.executeUpdate();
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+}

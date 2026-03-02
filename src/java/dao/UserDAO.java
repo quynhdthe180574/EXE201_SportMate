@@ -139,35 +139,43 @@ public class UserDAO {
         String sqlGet = "SELECT password FROM Users WHERE user_id = ?";
         String sqlUpdate = "UPDATE Users SET password = ? WHERE user_id = ?";
 
-        try (Connection con = new DBConnection().getConnection()) {
+        try (Connection con = new DBConnection().getConnection(); PreparedStatement psGet = con.prepareStatement(sqlGet)) {
 
-            PreparedStatement ps = con.prepareStatement(sqlGet);
-            ps.setInt(1, userId);
-            ResultSet rs = ps.executeQuery();
+            // 1️⃣ Lấy password hiện tại
+            psGet.setInt(1, userId);
 
-            if (!rs.next()) {
-                return false;
+            try (ResultSet rs = psGet.executeQuery()) {
+
+                if (!rs.next()) {
+                    return false; // Không tìm thấy user
+                }
+
+                String passwordInDB = rs.getString("password");
+                String oldPassHash = PasswordUtil.hash(oldPass);
+
+                // 2️⃣ So sánh mật khẩu cũ
+                if (!oldPassHash.equals(passwordInDB)) {
+                    return false;
+                }
             }
 
-            String passwordInDB = rs.getString("password");
-            String oldPassHash = PasswordUtil.hash(oldPass);
+            // 3️⃣ Update mật khẩu mới
+            try (PreparedStatement psUpdate = con.prepareStatement(sqlUpdate)) {
 
-            if (!oldPassHash.equals(passwordInDB)) {
-                return false;
+                String newPassHash = PasswordUtil.hash(newPass);
+
+                psUpdate.setString(1, newPassHash);
+                psUpdate.setInt(2, userId);
+
+                int rows = psUpdate.executeUpdate();
+
+                return rows > 0;
             }
-
-            String newPassHash = PasswordUtil.hash(newPass);
-
-            PreparedStatement ps2 = con.prepareStatement(sqlUpdate);
-            ps2.setString(1, newPassHash);
-            ps2.setInt(2, userId);
-            ps2.executeUpdate();
-
-            return true;
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return false;
     }
 
@@ -222,6 +230,56 @@ public class UserDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return false;
+    }
+
+    public User getUserByEmail(String email) {
+
+        String sql = "SELECT * FROM Users WHERE email = ?";
+
+        try (Connection conn = new DBConnection().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+
+                User user = new User();
+
+                user.setUserId(rs.getInt("userId"));
+                user.setFullname(rs.getString("fullName"));
+                user.setEmail(rs.getString("email"));
+                user.setPassword(rs.getString("password"));
+                user.setRoleId(rs.getInt("role"));
+                user.setStatus(rs.getInt("status"));
+
+                return user;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean updatePasswordByEmail(String email, String newPassword) {
+
+        String sql = "UPDATE Users SET password = ? WHERE email = ?";
+
+        try (Connection conn = new DBConnection().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, newPassword);
+            ps.setString(2, email);
+
+            int rows = ps.executeUpdate();
+
+            return rows > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return false;
     }
 }
