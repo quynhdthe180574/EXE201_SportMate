@@ -202,15 +202,6 @@ public class UserDAO {
         }
     }
 
-    public void requestBecomeOwner(int userId) throws Exception {
-        String sql = "UPDATE users SET owner_status = 'pending' WHERE user_id = ?";
-        try (Connection con = new DBConnection().getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, userId);
-            ps.executeUpdate();
-        }
-    }
-
     public boolean updateProfile(int userId, String fullname, String email, String phone) {
 
         String sql = "UPDATE Users SET fullname=?, email=?, phone=? WHERE user_id=?";
@@ -247,11 +238,11 @@ public class UserDAO {
 
                 User user = new User();
 
-                user.setUserId(rs.getInt("userId"));
-                user.setFullname(rs.getString("fullName"));
+                user.setUserId(rs.getInt("user_id"));
+                user.setFullname(rs.getString("fullname"));
                 user.setEmail(rs.getString("email"));
                 user.setPassword(rs.getString("password"));
-                user.setRoleId(rs.getInt("role"));
+                user.setRoleId(rs.getInt("role_id"));
                 user.setStatus(rs.getInt("status"));
 
                 return user;
@@ -281,5 +272,38 @@ public class UserDAO {
         }
 
         return false;
+    }
+
+    public void requestBecomeOwner(int userId,
+            String phone,
+            String address,
+            String description) throws Exception {
+
+        String sql = "INSERT INTO OwnerRequest "
+                + "(user_id, phone, address_detail, description, status) "
+                + "VALUES (?, ?, ?, ?, 'PENDING')";
+
+        try (Connection con = new DBConnection().getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.setString(2, phone);
+            ps.setString(3, address);     // lưu vào address_detail
+            ps.setString(4, description);
+
+            ps.executeUpdate();
+        }
+    }
+
+    public boolean hasPendingOwnerRequest(int userId) throws Exception {
+
+        String sql = "SELECT 1 FROM OwnerRequest "
+                + "WHERE user_id = ? AND status = 'PENDING'";
+
+        try (Connection con = new DBConnection().getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        }
     }
 }

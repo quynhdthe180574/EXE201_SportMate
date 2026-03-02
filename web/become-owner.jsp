@@ -142,8 +142,10 @@
             <c:if test="${not empty error}">
                 <div class="alert alert-danger">${error}</div>
             </c:if>
-
-            <form action="owner-request" method="post">
+            <c:if test="${not empty success}">
+                <div class="alert alert-success">${success}</div>
+            </c:if>
+            <form action="become-owner" method="post">
 
                 <div class="mb-3">
                     <label class="form-label">Số điện thoại *</label>
@@ -247,6 +249,74 @@
             </div>          
 
         </div>
+        <!-- SUCCESS MODAL -->
+        <div class="modal fade" id="successModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content text-center p-4">
+                    <div class="modal-body">
+                        <h4 class="text-success">🎉 Đăng ký thành công!</h4>
+                        <p class="mt-3">
+                            Yêu cầu của bạn đã được gửi. 
+                            Bạn sẽ được chuyển về trang chủ...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- ERROR MODAL -->
+        <div class="modal fade" id="errorModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content text-center p-4">
+                    <div class="modal-body">
+                        <h4 class="text-danger">❌ Đăng ký thất bại!</h4>
+                        <p class="mt-3">
+                            Có lỗi xảy ra. Vui lòng thử lại.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DUPLICATE MODAL -->
+        <div class="modal fade" id="duplicateModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content text-center p-4">
+                    <div class="modal-body">
+                        <h4 class="text-warning">⚠ Bạn đã gửi yêu cầu trước đó</h4>
+                        <p class="mt-3">
+                            Yêu cầu của bạn đang chờ admin duyệt.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <c:if test="${param.success == 'true'}">
+            <script>
+                var myModal = new bootstrap.Modal(document.getElementById('successModal'));
+                myModal.show();
+
+                // Sau 2.5 giây chuyển về home
+                setTimeout(function () {
+                    window.location.href = "home";
+                }, 2500);
+            </script>
+        </c:if>
+        <c:if test="${param.error == 'true'}">
+            <script>
+                var errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
+            </script>
+        </c:if>
+
+        <c:if test="${param.duplicate == 'true'}">
+            <script>
+                var duplicateModal = new bootstrap.Modal(document.getElementById('duplicateModal'));
+                duplicateModal.show();
+            </script>
+        </c:if>
     </body>
 </html>
