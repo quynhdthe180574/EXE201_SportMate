@@ -8,39 +8,67 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.TimeSlot;
-
 import java.io.IOException;
 import java.sql.Time;
 
-@WebServlet("/owner/set-timeslots")
+@WebServlet("/owner/setTimeSlots")
 public class SetTimeSlotsServlet extends HttpServlet {
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user_id") == null || !"2".equals(session.getAttribute("role_id"))) {
-            response.sendRedirect(request.getContextPath() + "/login.jsp");
+        if (session == null || session.getAttribute("userId") == null ||
+            session.getAttribute("roleId") == null || (Integer) session.getAttribute("roleId") != 2) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        request.getRequestDispatcher("/owner/set_timeslots.jsp").forward(request, response);
+        TimeSlotDAO dao = new TimeSlotDAO();
+        request.setAttribute("timeSlots", dao.getAllTimeSlots());
+        request.getRequestDispatcher("/WEB-INF/views/owner/setTimeSlots.jsp").forward(request, response);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user_id") == null || !"2".equals(session.getAttribute("role_id"))) {
-            response.sendRedirect(request.getContextPath() + "/login.jsp");
+        if (session == null || session.getAttribute("userId") == null ||
+            session.getAttribute("roleId") == null || (Integer) session.getAttribute("roleId") != 2) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        TimeSlot ts = new TimeSlot();
-        ts.setStartTime(Time.valueOf(request.getParameter("start_time") + ":00"));
-        ts.setEndTime(Time.valueOf(request.getParameter("end_time") + ":00"));
-        ts.setStatus(request.getParameter("status"));
+        String start = request.getParameter("startTime");
+        String end = request.getParameter("endTime");
 
-        new TimeSlotDAO().addTimeSlot(ts);
+        if (start == null || end == null || start.trim().isEmpty() || end.trim().isEmpty()) {
+            request.setAttribute("error", "Vui lòng chọn giờ bắt đầu và kết thúc");
+            doGet(request, response);
+            return;
+        }
 
-        response.sendRedirect(request.getContextPath() + "/owner/dashboard");
+        try {
+            // input type="time" thường trả về HH:mm → thêm :00
+            Time startTime = Time.valueOf(start + ":00");
+            Time endTime = Time.valueOf(end + ":00");
+
+            TimeSlot ts = new TimeSlot();
+            ts.setStartTime(startTime);
+            ts.setEndTime(endTime);
+
+            TimeSlotDAO dao = new TimeSlotDAO();
+            int slotId = dao.addTimeSlot(ts);
+
+            if (slotId > 0) {
+                response.sendRedirect(request.getContextPath() + "setTimeSlots?success=added");
+            } else {
+                request.setAttribute("error", "Thêm khung giờ thất bại");
+                doGet(request, response);
+            }
+        } catch (IllegalArgumentException e) {
+            request.setAttribute("error", "Định dạng giờ không hợp lệ (HH:mm)");
+            doGet(request, response);
+        }
     }
 }

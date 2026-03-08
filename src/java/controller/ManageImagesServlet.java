@@ -2,83 +2,94 @@ package controller;
 
 import dao.FieldImageDAO;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.Part;
 import model.FieldImage;
-
-import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 @WebServlet("/owner/manage-images")
-@MultipartConfig(fileSizeThreshold = 1024 * 1024,    // 1MB
-                 maxFileSize = 1024 * 1024 * 10,     // 10MB
-                 maxRequestSize = 1024 * 1024 * 50)  // 50MB
 public class ManageImagesServlet extends HttpServlet {
 
-    private static final String UPLOAD_DIR = "uploads";
-
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user_id") == null || !"2".equals(session.getAttribute("role_id"))) {
-            response.sendRedirect(request.getContextPath() + "/login.jsp");
+        if (session == null || session.getAttribute("userId") == null ||
+            session.getAttribute("roleId") == null || (Integer) session.getAttribute("roleId") != 2) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        int fieldId = Integer.parseInt(request.getParameter("field_id"));
-        FieldImageDAO imageDAO = new FieldImageDAO();
-
-        List<FieldImage> images = imageDAO.getImagesByField(fieldId);
-        request.setAttribute("images", images);
-        request.setAttribute("field_id", fieldId);
-
-        request.getRequestDispatcher("/owner/manage_images.jsp").forward(request, response);
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user_id") == null || !"2".equals(session.getAttribute("role_id"))) {
-            response.sendRedirect(request.getContextPath() + "/login.jsp");
+        String fieldIdStr = request.getParameter("fieldId");
+        if (fieldIdStr == null || fieldIdStr.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=missing_fieldId");
             return;
         }
 
-        int fieldId = Integer.parseInt(request.getParameter("field_id"));
-
-        // Tạo thư mục uploads nếu chưa có
-        String uploadPath = getServletContext().getRealPath("") + File.separator + UPLOAD_DIR;
-        File uploadDir = new File(uploadPath);
-        if (!uploadDir.exists()) uploadDir.mkdir();
-
-        for (Part part : request.getParts()) {
-            if (part.getName().equals("image") && part.getSize() > 0) {
-                String fileName = extractFileName(part);
-                String filePath = uploadPath + File.separator + fileName;
-                part.write(filePath);
-
-                // Lưu đường dẫn tương đối vào DB
-                String dbPath = UPLOAD_DIR + "/" + fileName;
-                new FieldImageDAO().addImage(fieldId, dbPath);
-            }
+        int fieldId;
+        try {
+            fieldId = Integer.parseInt(fieldIdStr.trim());
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=invalid_fieldId");
+            return;
         }
 
-        response.sendRedirect(request.getContextPath() + "/owner/manage-images?field_id=" + fieldId);
+        FieldImageDAO dao = new FieldImageDAO();
+        request.setAttribute("images", dao.getImagesByField(fieldId));
+        request.setAttribute("fieldId", fieldId);
+
+        // Forward đến file JSP đúng vị trí và tên
+        request.getRequestDispatcher("manage-images.jsp").forward(request, response);
     }
 
-    private String extractFileName(Part part) {
-        String contentDisp = part.getHeader("content-disposition");
-        String[] items = contentDisp.split(";");
-        for (String s : items) {
-            if (s.trim().startsWith("filename")) {
-                return s.substring(s.indexOf("=") + 2, s.length() - 1);
-            }
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        request.setCharacterEncoding("UTF-8");
+
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userId") == null ||
+            session.getAttribute("roleId") == null || (Integer) session.getAttribute("roleId") != 2) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
         }
-        return "";
+
+        String fieldIdStr = request.getParameter("fieldId");
+        String imageUrl = request.getParameter("imageUrl");
+
+        if (fieldIdStr == null || fieldIdStr.trim().isEmpty() ||
+            imageUrl == null || imageUrl.trim().isEmpty()) {
+            request.setAttribute("error", "Vui lòng nhập đầy đủ Field ID và URL ảnh.");
+            doGet(request, response);
+            return;
+        }
+
+        int fieldId;
+        try {
+            fieldId = Integer.parseInt(fieldIdStr.trim());
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Field ID không hợp lệ (phải là số).");
+            doGet(request, response);
+            return;
+        }
+
+        FieldImage image = new FieldImage();
+        image.setFieldId(fieldId);
+        image.setImageUrl(imageUrl.trim());
+
+        FieldImageDAO dao = new FieldImageDAO();
+        boolean success = dao.addImage(image);
+
+        if (success) {
+            response.sendRedirect(request.getContextPath() + "manage-images?fieldId=" + fieldId + "&success=added");
+        } else {
+            request.setAttribute("error", "Thêm ảnh thất bại. Vui lòng thử lại.");
+            doGet(request, response);
+        }
     }
 }

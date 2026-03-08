@@ -1,3 +1,4 @@
+// dao/FieldImageDAO.java
 package dao;
 
 import model.FieldImage;
@@ -12,20 +13,18 @@ public class FieldImageDAO {
     public List<FieldImage> getImagesByField(int fieldId) {
         List<FieldImage> list = new ArrayList<>();
         String sql = "SELECT * FROM FieldImages WHERE field_id = ?";
-
-        DBConnection db = new DBConnection();
-        Connection conn = db.getConnection();
+        Connection conn = DBConnection.getConnection();
         if (conn == null) return list;
-
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, fieldId);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                FieldImage img = new FieldImage();
-                img.setImageId(rs.getInt("image_id"));
-                img.setFieldId(rs.getInt("field_id"));
-                img.setImageUrl(rs.getString("image_url"));
-                list.add(img);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    FieldImage fi = new FieldImage();
+                    fi.setImageId(rs.getInt("image_id"));
+                    fi.setFieldId(rs.getInt("field_id"));
+                    fi.setImageUrl(rs.getString("image_url"));
+                    list.add(fi);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -33,34 +32,30 @@ public class FieldImageDAO {
         return list;
     }
 
-    public void addImage(int fieldId, String imageUrl) {
+    public boolean addImage(FieldImage image) {
         String sql = "INSERT INTO FieldImages (field_id, image_url) VALUES (?, ?)";
-
-        DBConnection db = new DBConnection();
-        Connection conn = db.getConnection();
-        if (conn == null) return;
-
+        Connection conn = DBConnection.getConnection();
+        if (conn == null) return false;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, fieldId);
-            ps.setString(2, imageUrl);
-            ps.executeUpdate();
+            ps.setInt(1, image.getFieldId());
+            ps.setString(2, image.getImageUrl());
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return false;
     }
 
-    public void deleteImage(int imageId) {
+    public boolean deleteImage(int imageId) {
         String sql = "DELETE FROM FieldImages WHERE image_id = ?";
-
-        DBConnection db = new DBConnection();
-        Connection conn = db.getConnection();
-        if (conn == null) return;
-
+        Connection conn = DBConnection.getConnection();
+        if (conn == null) return false;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, imageId);
-            ps.executeUpdate();
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return false;
     }
 }

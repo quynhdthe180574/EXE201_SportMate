@@ -1,3 +1,4 @@
+// util/DBConnection.java
 package util;
 
 import java.sql.Connection;
@@ -5,11 +6,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnection {
-
     private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=sport_booking;encrypt=false;trustServerCertificate=true;";
     private static final String USER = "sa";
     private static final String PASS = "123";
-
     private static Connection connection = null;
 
     static {
@@ -42,6 +41,7 @@ public class DBConnection {
             try {
                 connection.close();
                 System.out.println("[DBConnection] Connection closed.");
+                connection = null;
             } catch (SQLException e) {
                 e.printStackTrace();
             }

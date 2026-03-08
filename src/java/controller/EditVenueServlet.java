@@ -2,139 +2,148 @@ package controller;
 
 import dao.VenueDAO;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Part;
+import jakarta.servlet.http.HttpSession;
 import model.Venue;
-import model.Field;
-
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.sql.Time;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @WebServlet("/owner/edit-venue")
-@MultipartConfig(
-    fileSizeThreshold = 1024 * 1024 * 1,  // 1MB
-    maxFileSize = 1024 * 1024 * 10,       // 10MB mỗi file
-    maxRequestSize = 1024 * 1024 * 50     // 50MB tổng
-)
 public class EditVenueServlet extends HttpServlet {
-
-    private static final String UPLOAD_DIR = "uploads/venues";
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userId") == null ||
+            session.getAttribute("roleId") == null || (Integer) session.getAttribute("roleId") != 2) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
 
-        String idStr = request.getParameter("id");
+        String venueIdStr = request.getParameter("venueId");
+        if (venueIdStr == null || venueIdStr.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=missing_venueId");
+            return;
+        }
+
         int venueId;
         try {
-            venueId = Integer.parseInt(idStr);
+            venueId = Integer.parseInt(venueIdStr.trim());
         } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/owner/dashboard");
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=invalid_venueId");
             return;
         }
 
-        VenueDAO venueDAO = new VenueDAO();
-        Venue venue = venueDAO.getVenueById(venueId);
+        int ownerId = (Integer) session.getAttribute("userId");
+        VenueDAO dao = new VenueDAO();
+        Venue venue = dao.getVenueById(venueId, ownerId);
 
         if (venue == null) {
-            response.sendRedirect(request.getContextPath() + "/owner/dashboard");
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=notowner");
             return;
         }
 
-        // Lấy danh sách Field + ảnh của chúng (phải có imageUrls trong model Field)
-        List<Field> fields = venueDAO.getFieldsByVenue(venueId);
-
-        request.setAttribute("venue", venue);
-        request.setAttribute("fields", fields);
-        request.getRequestDispatcher("/owner/edit_venue.jsp").forward(request, response);
+        // Redirect đến JSP (vì JSP ngoài WEB-INF)
+        response.sendRedirect(request.getContextPath() + "/owner/edit-venue.jsp?venueId=" + venueId);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
 
-        int ownerId = 2; // hardcode test, sau này lấy từ session
-        int venueId = Integer.parseInt(request.getParameter("venue_id"));
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userId") == null ||
+            session.getAttribute("roleId") == null || (Integer) session.getAttribute("roleId") != 2) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
 
-        Venue venue = new Venue();
-        venue.setVenueId(venueId);
-        venue.setUserId(ownerId);
-        venue.setVenueName(request.getParameter("venue_name"));
-        venue.setProvinceId(Integer.parseInt(request.getParameter("province_id")));
-        venue.setDistrictId(Integer.parseInt(request.getParameter("district_id")));
-        venue.setAddressDetail(request.getParameter("address_detail"));
-        venue.setDescription(request.getParameter("description"));
-        venue.setStatus(request.getParameter("status"));
+        String venueIdStr = request.getParameter("venueId");
+        if (venueIdStr == null || venueIdStr.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=missing_venueId");
+            return;
+        }
 
-        // Xử lý thời gian an toàn
-        String openTimeStr = request.getParameter("open_time");
-        if (openTimeStr != null && !openTimeStr.trim().isEmpty()) {
-            try {
-                LocalTime lt = LocalTime.parse(openTimeStr);
-                venue.setOpenTime(Time.valueOf(lt));
-            } catch (Exception e) {
-                System.err.println("Lỗi parse open_time: " + openTimeStr);
+        int venueId;
+        try {
+            venueId = Integer.parseInt(venueIdStr.trim());
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=invalid_venueId");
+            return;
+        }
+
+        int ownerId = (Integer) session.getAttribute("userId");
+        VenueDAO dao = new VenueDAO();
+        Venue current = dao.getVenueById(venueId, ownerId);
+        if (current == null) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=notowner");
+            return;
+        }
+
+        try {
+            String venueName     = request.getParameter("venueName");
+            String provinceStr   = request.getParameter("provinceId");
+            String districtStr   = request.getParameter("districtId");
+            String addressDetail = request.getParameter("addressDetail");
+            String description   = request.getParameter("description");
+            String openTimeStr   = request.getParameter("openTime");
+            String closeTimeStr  = request.getParameter("closeTime");
+            String status        = request.getParameter("status");
+
+            if (isEmpty(venueName) || isEmpty(provinceStr) || isEmpty(districtStr) ||
+                isEmpty(addressDetail) || isEmpty(openTimeStr) || isEmpty(closeTimeStr)) {
+                String err = URLEncoder.encode("Vui lòng điền đầy đủ thông tin bắt buộc.", StandardCharsets.UTF_8);
+                response.sendRedirect(request.getContextPath() + "/owner/edit-venue.jsp?venueId=" + venueId + "&error=" + err);
+                return;
             }
-        }
 
-        String closeTimeStr = request.getParameter("close_time");
-        if (closeTimeStr != null && !closeTimeStr.trim().isEmpty()) {
-            try {
-                LocalTime lt = LocalTime.parse(closeTimeStr);
-                venue.setCloseTime(Time.valueOf(lt));
-            } catch (Exception e) {
-                System.err.println("Lỗi parse close_time: " + closeTimeStr);
+            int provinceId = Integer.parseInt(provinceStr.trim());
+            int districtId = Integer.parseInt(districtStr.trim());
+
+            openTimeStr = openTimeStr.trim() + ":00";
+            closeTimeStr = closeTimeStr.trim() + ":00";
+            Time openTime = Time.valueOf(openTimeStr);
+            Time closeTime = Time.valueOf(closeTimeStr);
+
+            Venue venue = new Venue();
+            venue.setVenueId(venueId);
+            venue.setUserId(ownerId);
+            venue.setVenueName(venueName.trim());
+            venue.setProvinceId(provinceId);
+            venue.setDistrictId(districtId);
+            venue.setAddressDetail(addressDetail.trim());
+            venue.setDescription(description != null ? description.trim() : "");
+            venue.setOpenTime(openTime);
+            venue.setCloseTime(closeTime);
+            venue.setStatus(status != null && !status.trim().isEmpty() ? status.trim() : "Hoạt động");
+
+            if (dao.updateVenue(venue)) {
+                response.sendRedirect(request.getContextPath() + "/owner/dashboard?success=update");
+            } else {
+                String err = URLEncoder.encode("Cập nhật thất bại. Vui lòng thử lại.", StandardCharsets.UTF_8);
+                response.sendRedirect(request.getContextPath() + "/owner/edit-venue.jsp?venueId=" + venueId + "&error=" + err);
             }
+        } catch (NumberFormatException e) {
+            String err = URLEncoder.encode("provinceId hoặc districtId không hợp lệ.", StandardCharsets.UTF_8);
+            response.sendRedirect(request.getContextPath() + "/owner/edit-venue.jsp?venueId=" + venueId + "&error=" + err);
+        } catch (IllegalArgumentException e) {
+            String err = URLEncoder.encode("Định dạng giờ không hợp lệ (HH:mm).", StandardCharsets.UTF_8);
+            response.sendRedirect(request.getContextPath() + "/owner/edit-venue.jsp?venueId=" + venueId + "&error=" + err);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String err = URLEncoder.encode("Lỗi hệ thống: " + e.getMessage(), StandardCharsets.UTF_8);
+            response.sendRedirect(request.getContextPath() + "/owner/edit-venue.jsp?venueId=" + venueId + "&error=" + err);
         }
+    }
 
-        VenueDAO venueDAO = new VenueDAO();
-        venueDAO.updateVenue(venue);
-
-        // Xử lý xóa ảnh (hiện tại chỉ hỗ trợ xóa từ VenueImages - nếu cần xóa FieldImages thì mở rộng sau)
-        String[] deleteImages = request.getParameterValues("delete_images");
-        if (deleteImages != null) {
-            for (String imgUrl : deleteImages) {
-                venueDAO.deleteVenueImage(imgUrl);
-                String filePath = getServletContext().getRealPath("") + imgUrl;
-                new File(filePath).delete();
-            }
-        }
-
-        // Xử lý upload ảnh mới (lưu vào VenueImages)
-        String appPath = getServletContext().getRealPath("");
-        String savePath = appPath + File.separator + UPLOAD_DIR;
-        new File(savePath).mkdirs();
-
-        List<String> newImageUrls = new ArrayList<>();
-
-        for (Part part : request.getParts()) {
-            if ("venue_images".equals(part.getName()) && part.getSize() > 0) {
-                String fileName = Paths.get(part.getSubmittedFileName()).getFileName().toString();
-                String uniqueName = System.currentTimeMillis() + "_" + fileName;
-                String filePath = savePath + File.separator + uniqueName;
-
-                Files.copy(part.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
-
-                String dbPath = "/" + UPLOAD_DIR + "/" + uniqueName;
-                newImageUrls.add(dbPath);
-            }
-        }
-
-        if (!newImageUrls.isEmpty()) {
-            venueDAO.addVenueImages(venueId, newImageUrls);
-        }
-
-        response.sendRedirect(request.getContextPath() + "/owner/dashboard?t=" + System.currentTimeMillis());
+    private boolean isEmpty(String str) {
+        return str == null || str.trim().isEmpty();
     }
 }

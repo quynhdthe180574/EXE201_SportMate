@@ -1,149 +1,98 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<!DOCTYPE html>
+<html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dashboard Chủ Sân - SportMate</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-light">
+        <div class="container mt-5">
+            <h1 class="text-center mb-4">Dashboard Chủ Sân</h1>
 
-<jsp:include page="header.jsp" />
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-white bg-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">Tổng số sân</h5>
+                            <p class="card-text display-4">${totalVenues}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-white bg-success">
+                        <div class="card-body">
+                            <h5 class="card-title">Tổng booking</h5>
+                            <p class="card-text display-4">${totalBookings}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h5 class="card-title">Doanh thu sơ bộ</h5>
+                            <p class="card-text display-4">
+                                <fmt:formatNumber value="${totalRevenue}" type="currency" currencyCode="VND"/>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<style>
-    .stats {
-        display:grid;
-        grid-template-columns:repeat(auto-fit, minmax(240px,1fr));
-        gap:25px;
-        margin:40px 0;
-    }
-    .card {
-        background:var(--white);
-        border-radius:16px;
-        padding:28px;
-        text-align:center;
-        box-shadow:0 6px 20px rgba(0,0,0,0.08);
-        transition:transform 0.3s, box-shadow 0.3s;
-    }
-    .card:hover {
-        transform:translateY(-8px);
-        box-shadow:0 12px 30px rgba(0,0,0,0.12);
-    }
-    .card h3 {
-        color:var(--green-pastel);
-        margin-bottom:12px;
-        font-size:1.15rem;
-    }
-    .card p {
-        font-size:3rem;
-        font-weight:700;
-        color:#555;
-        margin:0;
-    }
-    table {
-        width:100%;
-        border-collapse:collapse;
-        background:var(--yellow-pastel);
-        border-radius:12px;
-        overflow:hidden;
-        margin-top:30px;
-    }
-    th {
-        background:var(--blue-pastel);
-        color:white;
-        padding:16px;
-    }
-    td {
-        padding:16px;
-        border-bottom:1px solid #eee;
-    }
-    tr:hover {
-        background:var(--orange-pastel);
-    }
-    .actions a {
-        padding:8px 16px;
-        border-radius:8px;
-        text-decoration:none;
-        margin-right:12px;
-        font-weight:500;
-    }
-    .view {
-        background:#2196F3;
-        color:white;
-    }
-    .view:hover {
-        background:#0b7dda;
-    }
-    .edit {
-        background:var(--green-pastel);
-        color:#333;
-    }
-    .hide {
-        background:var(--pink-pastel);
-        color:#333;
-    }
-    .add-btn {
-        display:inline-block;
-        margin:40px 0;
-        padding:16px 40px;
-        background:var(--purple-pastel);
-        color:white;
-        border-radius:50px;
-        text-decoration:none;
-        font-size:1.1rem;
-        font-weight:bold;
-        transition:0.3s;
-    }
-    .add-btn:hover {
-        background:var(--pink-pastel);
-        transform:scale(1.05);
-    }
-    .no-data {
-        text-align:center;
-        color:#777;
-        font-size:1.3rem;
-        padding:40px 0;
-        font-style:italic;
-    }
-</style>
+            <div class="d-flex justify-content-between mb-3">
+                <h3>Danh sách sân của bạn</h3>
+                <a href="${pageContext.request.contextPath}/owner/add-venue" class="btn btn-success">+ Thêm sân mới</a>
+            </div>
 
-<h1 style="text-align:center; color:var(--blue-pastel); margin-bottom:20px;">Dashboard Chủ Sân</h1>
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Tên sân</th>
+                        <th>Địa chỉ</th>
+                        <th>Giờ mở cửa</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <c:forEach var="venue" items="${venues}">
+                        <tr>
+                            <td>${venue.venueName}</td>
+                            <td>${venue.addressDetail}</td>
+                            <td>${venue.openTime} - ${venue.closeTime}</td>
+                            <td>
+                                <span class="badge ${venue.status == 'Hoạt động' ? 'bg-success' : 'bg-danger'}">
+                                    ${venue.status}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="${pageContext.request.contextPath}/owner/view-venue?id=${venue.venueId}" 
+                                   class="btn btn-sm btn-info">Xem chi tiết</a>
+                                <form action="${pageContext.request.contextPath}/owner/edit-venue" method="get" style="display:inline;">
+                                    <input type="hidden" name="venueId" value="${venue.venueId}">
+                                    <button type="submit" class="btn btn-sm btn-warning">Sửa</button>
+                                </form>
+                                <c:if test="${venue.status != 'Ẩn'}">
+                                    <form action="${pageContext.request.contextPath}/owner/hide-venue" method="post" style="display:inline;">
+                                        <input type="hidden" name="venueId" value="${venue.venueId}">
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                onclick="return confirm('Ẩn sân này?')">Ẩn</button>
+                                    </form>
+                                </c:if>
+                            </td>
+                        </tr>
+                    </c:forEach>
+                </tbody>
+            </table>
 
-<div class="stats">
-    <div class="card"><h3>Tổng số sân</h3><p>${venueCount}</p></div>
-    <div class="card"><h3>Tổng booking</h3><p>${bookingCount}</p></div>
-    <div class="card"><h3>Doanh thu sơ bộ</h3><p>${revenue} ₫</p></div>
-</div>
+            <c:if test="${not empty error}">
+                <div class="alert alert-danger mt-3">${error}</div>
+            </c:if>
+        </div>
 
-<h2 style="color:var(--blue-pastel); margin:40px 0 20px;">Danh sách sân của bạn</h2>
-
-<c:if test="${not empty venues}">
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Tên sân</th>
-            <th>Địa chỉ</th>
-            <th>Giờ mở – đóng</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-        </tr>
-
-        <c:forEach items="${venues}" var="v">
-            <tr>
-                <td>${v.venueId}</td>
-                <td>${v.venueName}</td>
-                <td>${v.addressDetail}</td>
-                <td>${v.openTime} – ${v.closeTime}</td>
-                <td style="color:${v.status == 'Hoạt động' ? '#4CAF50' : '#f44336'}; font-weight: bold;">
-                    ${v.status}
-                </td>
-                <td class="actions">
-                    <a href="${pageContext.request.contextPath}/owner/view-venue?id=${v.venueId}" class="view">Xem</a>
-                    <a href="${pageContext.request.contextPath}/owner/edit-venue?id=${v.venueId}" class="edit">Sửa</a>
-                    <a href="${pageContext.request.contextPath}/owner/hide-venue?id=${v.venueId}" class="hide" onclick="return confirm('Ẩn sân này?')">Ẩn</a>
-                </td>
-            </tr>
-        </c:forEach>
-    </table>
-</c:if>
-
-<c:if test="${empty venues}">
-    <p class="no-data">Bạn chưa có sân nào. Hãy thêm sân mới ngay!</p>
-</c:if>
-
-<a href="${pageContext.request.contextPath}/owner/add-venue" class="add-btn">+ Thêm sân mới</a>
-
-<jsp:include page="footer.jsp" />
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+</html>

@@ -7,32 +7,50 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
 import java.io.IOException;
 
-@WebServlet("/owner/hide-venue")
+@WebServlet("/owner/hideVenue")
 public class HideVenueServlet extends HttpServlet {
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        // Không cho phép GET → chuyển hướng về dashboard
+        response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=invalid_method");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user_id") == null || !"2".equals(session.getAttribute("role_id"))) {
-            response.sendRedirect(request.getContextPath() + "/login.jsp");
+        if (session == null || session.getAttribute("userId") == null ||
+            session.getAttribute("roleId") == null || (Integer) session.getAttribute("roleId") != 2) {
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        int venueId = Integer.parseInt(request.getParameter("id"));
-        VenueDAO venueDAO = new VenueDAO();
+        int ownerId = (Integer) session.getAttribute("userId");
+        String venueIdStr = request.getParameter("venueId");
 
-        // Không cho ẩn nếu có booking
-        if (venueDAO.hasBookings(venueId)) {
-            request.setAttribute("error", "Không thể ẩn sân vì đang có booking!");
-            request.getRequestDispatcher("/owner/dashboard").forward(request, response);
+        if (venueIdStr == null || venueIdStr.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=missing_venueId");
             return;
         }
 
-        venueDAO.hideVenue(venueId);
+        int venueId;
+        try {
+            venueId = Integer.parseInt(venueIdStr);
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?error=invalid_venueId");
+            return;
+        }
 
-        response.sendRedirect(request.getContextPath() + "/owner/dashboard");
+        VenueDAO dao = new VenueDAO();
+        if (dao.hideVenue(venueId, ownerId)) {
+            response.sendRedirect(request.getContextPath() + "/owner/dashboard?success=hidden");
+        } else {
+            request.setAttribute("error", "Không thể ẩn vì có booking đang hoạt động");
+            request.getRequestDispatcher("/WEB-INF/views/owner/dashboard.jsp").forward(request, response);
+        }
     }
 }
