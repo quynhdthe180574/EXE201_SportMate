@@ -23,7 +23,7 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASS }}
-          source: "dist/SportMate.war"
+          source: "./dist/SportMate-test.war"
           target: "C:/deploy/"
 
       - name: Restart Tomcat
