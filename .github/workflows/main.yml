@@ -9,16 +9,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - name: Build
-        run: ant clean dist
+      - name: Verify WAR exists
+        run: |
+          ls -lah dist
+          test -f dist/SportMate.war
 
       - name: Upload WAR
         uses: appleboy/scp-action@v0.1.7
