@@ -15,7 +15,7 @@ jobs:
       - name: Verify WAR exists
         run: |
           ls -lah dist
-          test -f dist/SportMate.war
+          test -f dist/SportMate-test.war
 
       - name: Upload WAR
         uses: appleboy/scp-action@v0.1.7
