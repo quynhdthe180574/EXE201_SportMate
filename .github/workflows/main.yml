@@ -15,7 +15,7 @@ jobs:
       - name: Verify WAR exists
         run: |
           ls -lah dist
-          test -f dist/SportMate-test.war
+          test -f dist/SportMate.war
 
       - name: Upload WAR
         uses: appleboy/scp-action@v0.1.7
@@ -23,10 +23,10 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASS }}
-          source: "./dist/SportMate-test.war"
+          source: "dist/SportMate.war"
           target: "C:/deploy/"
 
-      - name: Restart Tomcat
+      - name: Run deploy script
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_IP }}
